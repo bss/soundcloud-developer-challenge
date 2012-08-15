@@ -51,7 +51,9 @@ $(function(){
       //this.set( { "tracks": new TrackCollection } );
       this.tracks = new (Backbone.Collection.extend({
         model: TrackModel,
-        localStorage: new Backbone.LocalStorage("sc-playlists-"+this.id+"-tracks") // TODO: Change to cid?
+        
+        localStorage: new Backbone.LocalStorage("sc-playlists-"+this.id+"-tracks"),
+
       }))()
       this.tracks.fetch()
     },
@@ -108,8 +110,8 @@ $(function(){
       return this;
     },
 
-    addPlaylist: function (e) {
-      if (e.keyCode != 13) return;
+    addPlaylist: function (event) {
+      if (event.keyCode != 13) return;
       var inp = this.$('#add-playlist');
       if (!inp.val()) return;
       this.model.create( { "title": inp.val() } );
