@@ -73,7 +73,7 @@ $(function(){
    
   var PlaylistCollection = Backbone.Collection.extend({
     model: PlaylistModel,
-    //localStorage: new Store("sc-playlists")
+    
     localStorage: new Backbone.LocalStorage("sc-playlists"),
 
     saveAll: function() {
