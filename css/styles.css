@@ -1,0 +1,116 @@
+html {
+	line-height: 1.5em;
+	color: #222;
+	font-family: Helvetica-Neue, Helvetica, Verdana;
+}
+
+h1 {
+	margin-bottom: 10px;
+}
+
+a {
+	color: #06C;
+	text-decoration: none;
+}
+
+a [class^="icon-"] {
+	opacity: 0.9;
+}
+
+.view {
+	display: inline;
+}
+.view.block {
+	display: block;
+}
+
+.edit {
+	display: none;
+}
+
+.editing .view {
+	display: none;
+}
+
+.editing .edit {
+	display: inline;
+}
+.editing .edit.block {
+	display: block;
+}
+
+.btn-round {
+	padding: 1px 10px;
+	border-radius: 10px;
+
+	background: #06C;
+	color: white;
+}
+.btn-round:hover { 
+	opacity: 0.8;
+}
+.btn-orange {
+	border: none;
+	background: #F78410;
+	color: white;
+}
+
+
+#app {
+	margin: 0 auto;
+	padding: 10px;
+	width: 600px;
+}
+
+.playlists {
+	list-style: none;
+	margin: 10px;
+	padding: 0px;
+}
+
+.add-playlist-container {
+	margin-left: 10px;
+	margin-right: 10px;
+	margin-bottom: 20px;
+}
+.add-playlist {
+	width: 100%;
+}
+
+.controls-top {
+	font-size: 16px;
+	margin-left: 20px;
+}
+
+.controls-bottom {
+	margin-top: 20px;
+}
+
+.description {
+	margin-bottom: 20px;
+}
+
+.tracklist {
+	list-style: none;
+	margin: 10px;
+	padding: 0px;
+}
+
+.tracklist li {
+	padding: 2px 0px;
+}
+
+.tracklist li {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.add-track-container {
+	margin-left: 55px;
+	margin-right: 10px;
+	margin-bottom: 20px;
+}
+.add-track {
+	width: 100%;
+}
