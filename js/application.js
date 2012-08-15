@@ -118,6 +118,7 @@ $(function(){
 
     events: {
       "keypress #add-playlist": "addPlaylist",
+      "click #add-playlist-button": "addPlaylist",
       "click .delete-playlist": "delete",
       "click .undo-action": "undo"
     },
@@ -137,8 +138,9 @@ $(function(){
 
     // Adds a playlist to the model using the input text-box in the UI.
     addPlaylist: function (event) {
-      if (event.keyCode != 13) return; // Match Enter key
-      var inp = $(event.currentTarget);
+      if (event.type === "click") event.preventDefault();
+      if (event.type === "keypress" && event.keyCode != 13) return; // Match Enter key
+      var inp = $("#add-playlist");
       if (!inp.val()) return;
 
       history.newAction(function () {
@@ -189,6 +191,7 @@ $(function(){
       "click .playpause-track":  "playPauseTrack",
       "click .delete-track":  "deleteTrack",
       "keypress #add-track": "addTrack",
+      "click #add-track-button": "addTrack",
       "click .undo-action": "undo"
     },
 
@@ -254,8 +257,9 @@ $(function(){
     // The track is looked up on soundcloud using the resolve API call.
     // If the track is not found/invalid an alert is shown.
     addTrack: function (event) {
-      if (event.keyCode != 13) return;  // Match Enter key
-      var inp = $(event.currentTarget);
+      if (event.type === "click") event.preventDefault();
+      if (event.type === "keypress" && event.keyCode != 13) return;  // Match Enter key
+      var inp = $("#add-track");
       if (!inp.val()) return;
       var self = this;
 

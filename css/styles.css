@@ -94,7 +94,12 @@ a [class^="icon-"] {
 	margin-bottom: 20px;
 }
 .add-playlist {
-	width: 100%;
+	width: 510px;
+}
+.add-playlist-button {
+	margin-left: 5px;
+	padding-left: 15px;
+	padding-right: 15px;
 }
 
 .description {
@@ -119,12 +124,18 @@ a [class^="icon-"] {
 }
 
 .add-track-container {
-	margin-left: 55px;
+	margin-left: 0px;
+	margin-top: 10px;
 	margin-right: 10px;
 	margin-bottom: 20px;
 }
 .add-track {
-	width: 100%;
+	width: 520px;
+}
+.add-track-button {
+	margin-left: 5px;
+	padding-left: 15px;
+	padding-right: 15px;
 }
 
 .controls-top {
