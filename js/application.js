@@ -1,6 +1,25 @@
 
 $(function(){
 
+  var ActionHistory = function () {
+    var stack = [];
+    this.newAction = function (doAction, undoAction, context) {
+      var idx = stack.push( { undoAction: undoAction, context: context } );
+      stack[idx-1].doActionResult = doAction.call(context);
+    };
+    this.undo = function () {
+      if (stack.length > 0) {
+        var step = stack.pop();
+        step.undoAction.call(step.context, step.doActionResult);
+      }
+    };
+    this.length = function () {
+      return stack.length;
+    }
+  }
+
+  var history = new ActionHistory;
+
   // Models
   var TrackModel = Backbone.Model.extend({
     // Default attributes
@@ -95,6 +114,8 @@ $(function(){
 
     events: {
       "keypress #add-playlist": "addPlaylist",
+      "click .delete-playlist": "delete",
+      "click .undo-action": "undo"
     },
 
     initialize: function () {
@@ -106,7 +127,7 @@ $(function(){
 
     render: function () {
       $(this.el).html("");
-      this.$el.html( this.template( { playlists: this.model.toJSON() } ) );
+      this.$el.html( this.template( { playlists: this.model.toJSON(), has_history: (history.length() > 0), history_length: history.length() } ) );
       return this;
     },
 
@@ -114,8 +135,33 @@ $(function(){
       if (event.keyCode != 13) return;
       var inp = this.$('#add-playlist');
       if (!inp.val()) return;
-      this.model.create( { "title": inp.val() } );
+      history.newAction(function () {
+        return this.model.create( { "title": inp.val() } ).id;
+      }, function (id) { 
+        this.model.get(id).destroy();
+      }, this);
       inp.val('');
+    },
+
+    delete: function (event) {
+      event.preventDefault();
+      var model = this.model.get($(event.currentTarget).attr('data-id'));
+      var doRemove = confirm("Are you sure you would like to delete the playlist '"+model.get("title")+"'? This cannot be undone.");
+      if (doRemove) {
+        history.newAction(function () {
+          var oldValue = model.toNestedJSON();
+          model.destroy();
+          return oldValue;
+        }, function (oldValue) { 
+          this.model.create(oldValue);
+        }, this);
+      }
+    },
+
+    undo: function (event) {
+      event.preventDefault();
+      history.undo();
+      this.render();
     }
 
   });
@@ -130,10 +176,10 @@ $(function(){
       "dblclick #playlist-title": "edit",
       "click #edit-playlist":  "edit",
       "click #playlist-save": "save",
-      "click #delete-playlist":  "delete",
       "click .playpause-track":  "playPauseTrack",
       "click .delete-track":  "deleteTrack",
       "keypress #add-track": "addTrack",
+      "click .undo-action": "undo"
     },
 
     initialize: function () {
@@ -146,7 +192,10 @@ $(function(){
 
     render: function () {
         $(this.el).html("");
-        this.$el.html(this.template(this.model.toNestedJSON()));
+        var obj = this.model.toNestedJSON();
+        obj.has_history = (history.length() > 0);
+        obj.history_length = history.length();
+        this.$el.html(this.template(obj));
         return this;
     },
 
@@ -160,17 +209,16 @@ $(function(){
       event.preventDefault();
       var title = $('#playlist-title .edit').val(),
           description = $('#playlist-description .edit').val();
-      this.model.save( { title: title, description: description } );
-      this.$el.removeClass("editing");
-    },
 
-    delete: function (event) {
-      event.preventDefault();
-      var doRemove = confirm("Are you sure you would like to delete the playlist '"+this.model.get("title")+"'? This cannot be undone.");
-      if (doRemove) {
-        this.model.destroy();
-        app.navigate("/", {trigger: true});
-      }
+      history.newAction(function () {
+        var oldValue = { title: this.model.get("title"), description: this.model.get("description") };
+        this.model.save( { title: title, description: description } );
+        return oldValue;
+      }, function (oldValue) { 
+        this.model.save( oldValue );
+      }, this);
+      
+      this.$el.removeClass("editing");
     },
 
     playPauseTrack: function (event) {
@@ -197,7 +245,13 @@ $(function(){
       var track = this.model.tracks.get(trackId);
       var doRemove = confirm("Are you sure you would like to delete the track '"+track.get("title")+"'? This cannot be undone.");
       if (doRemove) {
-        track.destroy();
+        history.newAction(function () {
+          var oldValue = track.toJSON();
+          track.destroy();
+          return oldValue;
+        }, function (oldValue) { 
+          this.model.tracks.create( oldValue );
+        }, this);
       }
     },
 
@@ -248,16 +302,26 @@ $(function(){
       var self = this;
       var scTrack = SC.get("/resolve", {url: inp.val()}, function (obj, err) {
         if (err === null && typeof(obj.kind) !== 'undefined' && obj.kind == "track") {
-          self.model.tracks.create( { title: obj.title, 
-                                      trackId: obj.id, 
-                                      userId: obj.user_id, 
-                                      username: obj.user.username });
+          history.newAction(function () {
+            return this.model.tracks.create( { title: obj.title, 
+                                               trackId: obj.id, 
+                                               userId: obj.user_id, 
+                                               username: obj.user.username }).id;
+          }, function (id) { 
+            this.model.tracks.get(id).destroy();
+          }, self);
         } else {
           alert("The provided url is not a valid soundcloud track.");
         }
       });
 
       inp.val('');
+    },
+
+    undo: function (event) {
+      event.preventDefault();
+      history.undo();
+      this.render();
     }
 
   });
