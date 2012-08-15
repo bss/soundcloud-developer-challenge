@@ -1,18 +1,34 @@
-
+// Requirements:
+//    Backbone.js             (> 0.9.2)
+//    Backbone.localStorage   (> 1.0)
+//    Underscore              (> 1.3.3)
+//    Handlebars.js           (> 1.0.0.beta.6)
+//    jQuery                  (> 1.7.2)
+//    Soundcloud SDK
 $(function(){
 
+  // Action history, allows us to undo changes in the models.
   var ActionHistory = function () {
     var stack = [];
+
+    // Registers a new action, any return values in the doAction 
+    // callback is provided as an argument in the undoAction callback.
     this.newAction = function (doAction, undoAction, context) {
+      // doActionResult is appended after the action is pushed to 
+      // the stack to ensure the stack contains objects before
+      // rendering is done in the views.
       var idx = stack.push( { undoAction: undoAction, context: context } );
       stack[idx-1].doActionResult = doAction.call(context);
     };
+
+    // Undo the last registered action using the registered undoAction.
     this.undo = function () {
       if (stack.length > 0) {
         var step = stack.pop();
         step.undoAction.call(step.context, step.doActionResult);
       }
     };
+
     this.length = function () {
       return stack.length;
     }
@@ -67,27 +83,21 @@ $(function(){
       
       this.save();
       
-      //this.set( { "tracks": new TrackCollection } );
+      // A new collection is created for each playlist, to make it work with localstorage.
       this.tracks = new (Backbone.Collection.extend({
         model: TrackModel,
         
         localStorage: new Backbone.LocalStorage("sc-playlists-"+this.id+"-tracks"),
 
-      }))()
+      }))();
       this.tracks.fetch()
     },
 
+    // Full nested JSON containing the tracks-collection as well as local attributes.
     toNestedJSON: function() {
       var json = this.toJSON();
       json.tracks = this.tracks.toJSON();
       return json;
-    },
-
-    saveAll: function() {
-        _.each(this.tracks.models, function(track) {
-          track.save()
-        })
-
     },
 
   });
@@ -97,12 +107,6 @@ $(function(){
     
     localStorage: new Backbone.LocalStorage("sc-playlists"),
 
-    saveAll: function() {
-      _.each(this.models, function(playlist) {
-        playlist.save()
-        playlist.saveAll()
-      })
-    }
   });
 
   // Views
@@ -119,30 +123,35 @@ $(function(){
     },
 
     initialize: function () {
-      this.model.bind("reset", this.render, this);
-      this.model.bind("add", this.render, this);
-      this.model.bind("change", this.render, this);
-      this.model.bind("remove", this.render, this);
+      this.model.on("reset add change remove", this.render, this);
     },
 
+    // Renders the playlist list template using the handlebars template
     render: function () {
       $(this.el).html("");
-      this.$el.html( this.template( { playlists: this.model.toJSON(), has_history: (history.length() > 0), history_length: history.length() } ) );
+      this.$el.html( this.template( { playlists: this.model.toJSON(), 
+                                      has_history: (history.length() > 0), 
+                                      history_length: history.length() } ) );
       return this;
     },
 
+    // Adds a playlist to the model using the input text-box in the UI.
     addPlaylist: function (event) {
-      if (event.keyCode != 13) return;
-      var inp = this.$('#add-playlist');
+      if (event.keyCode != 13) return; // Match Enter key
+      var inp = $(event.currentTarget);
       if (!inp.val()) return;
+
       history.newAction(function () {
-        return this.model.create( { "title": inp.val() } ).id;
+        // The new id is used if the user undo the action (see below).
+        return this.model.create( { "title": inp.val() } ).id; 
       }, function (id) { 
         this.model.get(id).destroy();
       }, this);
+
       inp.val('');
     },
 
+    // Deletes a playlist after the user confirmed the deletion.
     delete: function (event) {
       event.preventDefault();
       var model = this.model.get($(event.currentTarget).attr('data-id'));
@@ -158,6 +167,7 @@ $(function(){
       }
     },
 
+    // Undo the last action using action history
     undo: function (event) {
       event.preventDefault();
       history.undo();
@@ -183,13 +193,13 @@ $(function(){
     },
 
     initialize: function () {
-        this.model.bind("reset", this.render, this);
-        this.model.bind("change", this.render, this);
-        this.model.tracks.bind("add", this.render, this);
-        this.model.tracks.bind("change", this.render, this);
-        this.model.tracks.bind("remove", this.render, this);
+        // Re-render page when playlist or track changes.
+        this.model.bind("reset change", this.render, this);
+        this.model.tracks.bind("add change remove", this.render, this);
     },
 
+    // Renders the "show playlist" template using the handlebars template
+    // history length is added to the template.
     render: function () {
         $(this.el).html("");
         var obj = this.model.toNestedJSON();
@@ -199,12 +209,14 @@ $(function(){
         return this;
     },
 
+    // Turn on editing of the playlist
     edit: function (event) {
       event.preventDefault();
       this.$el.addClass("editing");
       this.$('.edit.focus').focus();
     },
 
+    // Saves the edited playlist
     save: function (event) {
       event.preventDefault();
       var title = $('#playlist-title .edit').val(),
@@ -221,24 +233,7 @@ $(function(){
       this.$el.removeClass("editing");
     },
 
-    playPauseTrack: function (event) {
-      event.preventDefault();
-
-      var newTrackId = $(event.currentTarget).attr('data-track-id');
-      var track = this.model.tracks.get(newTrackId);
-      var trackIndex = this.model.tracks.indexOf(track);
-
-      if (this.currentTrackIndex == trackIndex) {
-        this.currentTrack.togglePause();
-      } else {
-        if (this.currentTrackIndex !== null && this.currentTrack !== null) {
-          this.currentTrack.pause();
-        }
-
-        this.loopTracks(trackIndex);
-      }
-    },
-
+    // Deletes a track. Ask user for confirmation before deletion.
     deleteTrack: function (event) {
       event.preventDefault();
       var trackId = $(event.currentTarget).attr('data-track-id');
@@ -255,34 +250,96 @@ $(function(){
       }
     },
 
+    // Adds a track to a playlist using the soundcloud url.
+    // The track is looked up on soundcloud using the resolve API call.
+    // If the track is not found/invalid an alert is shown.
+    addTrack: function (event) {
+      if (event.keyCode != 13) return;  // Match Enter key
+      var inp = $(event.currentTarget);
+      if (!inp.val()) return;
+      var self = this;
+
+      // Find track on soundcloud using resolver
+      var scTrack = SC.get("/resolve", {url: inp.val()}, function (obj, err) {
+        if (err === null && typeof(obj.kind) !== 'undefined' && obj.kind == "track") {
+          // The track was found.
+          history.newAction(function () {
+            return this.model.tracks.create( { title: obj.title, 
+                                               trackId: obj.id, 
+                                               userId: obj.user_id, 
+                                               username: obj.user.username }).id;
+          }, function (id) { 
+            this.model.tracks.get(id).destroy();
+          }, self);
+        } else {
+          // Track not found/invalid
+          alert("The provided url is not a valid soundcloud track.");
+        }
+      });
+
+      inp.val('');
+    },
+
+    // Plays or pauses a track depending on the current playback state.
+    playPauseTrack: function (event) {
+      event.preventDefault();
+
+      var newTrackId = $(event.currentTarget).attr('data-track-id');
+      var track = this.model.tracks.get(newTrackId);
+      var trackIndex = this.model.tracks.indexOf(track);
+
+      if (this.currentTrackIndex == trackIndex) {
+        // Clicked track is currently playing
+        this.currentTrack.togglePause();
+      } else {
+        // Another track was clicked.
+        if (this.currentTrackIndex !== null && this.currentTrack !== null) {
+          this.currentTrack.pause();
+        }
+
+        this.loopTracks(trackIndex);
+      }
+    },
+
+    // State variables used to keep track of which track is currently playing.
     currentTrackIndex: null,
     currentTrack: null,
 
+    // Resets the play/pause icons next to all the tracks, to the initial state.
     resetPlayPauseIcons: function () {
       $('.playpause-track i.icon-play').show();
       $('.playpause-track i.icon-pause').hide();
     },
 
+    // Starts to play the specified track. When the track is done, 
+    // the next track on the playlist is started.
+    // Streaming is done using the soundcloud javascript streaming API.
     loopTracks: function (startIndex) {
       this.currentTrackIndex = startIndex;
-
       this.resetPlayPauseIcons();
+
+      // Find track
       var track = this.model.tracks.at(this.currentTrackIndex);
       var trackId = track.get("id");
       
       var self = this;
+      // Begin to stream and play the track.
       SC.stream("/tracks/"+track.get('trackId'), {
         autoPlay: true,
         onplay: function () {
           self.currentTrack = this;
+          // Setup playback icons correctly when the track starts to play.
           $('#playpause-track-'+trackId+' i.icon-play').hide();
           $('#playpause-track-'+trackId+' i.icon-pause').show();
         },
         onpause: function () {
+          // Setup playback icons correctly when the track is paused.
           $('#playpause-track-'+trackId+' i.icon-play').show();
           $('#playpause-track-'+trackId+' i.icon-pause').hide();
         },
         onfinish: function () {
+          // Play next track on playlist, if the end of the playlist has not 
+          // yet been reached.
           var newIndex = self.currentTrackIndex+1;
           if (newIndex < self.model.tracks.length) {
             self.loopTracks(newIndex);
@@ -295,29 +352,7 @@ $(function(){
       });
     },
 
-    addTrack: function (e) {
-      if (e.keyCode != 13) return;
-      var inp = this.$('#add-track');
-      if (!inp.val()) return;
-      var self = this;
-      var scTrack = SC.get("/resolve", {url: inp.val()}, function (obj, err) {
-        if (err === null && typeof(obj.kind) !== 'undefined' && obj.kind == "track") {
-          history.newAction(function () {
-            return this.model.tracks.create( { title: obj.title, 
-                                               trackId: obj.id, 
-                                               userId: obj.user_id, 
-                                               username: obj.user.username }).id;
-          }, function (id) { 
-            this.model.tracks.get(id).destroy();
-          }, self);
-        } else {
-          alert("The provided url is not a valid soundcloud track.");
-        }
-      });
-
-      inp.val('');
-    },
-
+    // Undo the last action using action history
     undo: function (event) {
       event.preventDefault();
       history.undo();
@@ -335,15 +370,18 @@ $(function(){
       },
 
       initialize: function () {
+        // Initialise the playlist collection so it can be used in all pages
         this.playlistList = new PlaylistCollection;
       },
    
+      // Shows the playlist overview page
       playlists: function () {
         this.playlistListView = new PlaylistListView({model:this.playlistList});
         this.playlistList.fetch();
         $('#content').html(this.playlistListView.render().el);        
       },
    
+      // Shows a specific playlist
       showPlaylist: function (id) {
         this.playlistList.fetch();
         this.playlist = this.playlistList.get(id);
@@ -351,7 +389,8 @@ $(function(){
         $('#content').html(this.playlistView.render().el);
       }
   });
-   
+
+  // Startup router and app!
   var app = new AppRouter();
   Backbone.history.start();
 

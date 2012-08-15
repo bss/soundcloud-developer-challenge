@@ -1,3 +1,4 @@
+/* Full App styles */
 html {
 	line-height: 1.5em;
 	color: #222;
@@ -70,6 +71,8 @@ a [class^="icon-"] {
 	font-style: italic;
 }
 
+
+/* Styles for playlist-list page */
 .playlists {
 	list-style: none;
 	margin: 10px;
@@ -94,19 +97,11 @@ a [class^="icon-"] {
 	width: 100%;
 }
 
-.controls-top {
-	font-size: 16px;
-	margin-left: 20px;
-}
-
-.controls-bottom {
-	margin-top: 20px;
-}
-
 .description {
 	margin-bottom: 20px;
 }
 
+/* Styles for "show playlist" page */
 .tracklist {
 	list-style: none;
 	margin: 10px;
@@ -130,4 +125,13 @@ a [class^="icon-"] {
 }
 .add-track {
 	width: 100%;
+}
+
+.controls-top {
+	font-size: 16px;
+	margin-left: 20px;
+}
+
+.controls-bottom {
+	margin-top: 20px;
 }
