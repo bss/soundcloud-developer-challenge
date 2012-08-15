@@ -1,0 +1,84 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Playlists</title>
+<link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/font-awesome.css?2.0.1" type="text/css" media="screen" charset="utf-8">
+</head>
+
+<body>
+  <div id="app">
+    <div id="content"></div>
+    <div id="footer">
+      <hr />
+      Created by <a href="http://github.com/bss">@bss</a>
+    </div>    
+  </div>
+
+  <!-- Templates -->
+  <script type="text/x-handlebars-template" id="tpl-playlist-list">
+    <h1>Playlists</h1>
+    {{#if playlists }}
+    <ul id="playlist-list" class="playlists">
+      {{#each playlists}}
+        <li><a href='#playlists/{{ id }}'>{{ title }}</a> <a href="#" class="btn-round delete-playlist" data-id="{{ id }}"><i class="icon-trash" title="Delete"></i></a></span></li>
+      {{/each}}
+    </ul>
+    {{/if}}
+    <div class="add-playlist-container block"><input id="add-playlist" class="add-playlist" type="text" placeholder="To add a playlist, type a title and press enter!"></div>
+    <div>
+    {{# if has_history }}
+    <a href="#" class="undo-action">Undo last action</a>
+    {{else}}
+    <span class="disabled undo-action">Undo last action</span>
+    {{/if}}
+    </div>
+  </script>
+
+  <script type="text/x-handlebars-template" id="tpl-playlist-show">
+    <h1><a href="#">Playlists</a> / <span id="playlist-title"><span class="view">{{ title }}</span><input class="edit focus" type="text" value="{{ title }}" /></span><span class="view controls-top"><a href="#" class="btn-round" id="edit-playlist"><i class="icon-edit" title="Edit"></i></a></h1>
+    
+    <div id="playlist-description" class="description">
+      <span class="view">{{#if description}} {{description}} {{else}} (no description) {{/if}}</span>
+      <textarea cols="50" rows="6" class="edit">{{#if description}}{{description}}{{/if}}</textarea>
+    </div>
+    
+    {{# if tracks }}
+    <ul class="tracklist view">
+      {{#each tracks}}
+      <li class="track"><a href="#" class="btn-round btn-orange playpause-track view" id="playpause-track-{{ id }}" data-track-id="{{ id }}"><i class="icon-play"></i><i class="icon-pause" style="display:none;"></i></a> <a href="#" class="view btn-round delete-track" data-track-id="{{ id }}"><i class="icon-trash"></i></a> <span class="track-title">{{title}}</span> </li>
+      {{/each}}
+    </ul>
+    {{/if}}
+
+    <div class="add-track-container view block"><input id="add-track" class="add-track" type="text" placeholder="To add a track, insert Soundcloud url and press enter!"></div>
+
+    <a href="#" id="playlist-save" class="edit btn-round">Save</a>
+    <div class="view">
+    <div>
+    {{# if has_history }}
+    <a href="#" class="undo-action">Undo last action</a>
+    {{else}}
+    <span class="disabled undo-action">Undo last action</span>
+    {{/if}}
+    </div>
+    <div class="controls-bottom"><a href="#">Back</a></div>
+    </div>
+    
+  </script>
+
+  <!-- JavaScript -->
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+  <script type="text/javascript" src="js/handlebars-1.0.0.beta.6.js"></script>
+  <script type="text/javascript" src="js/underscore.js"></script>
+  <script type="text/javascript" src="js/backbone.js"></script>
+  <script type="text/javascript" src="js/backbone.localStorage.js"></script>
+  <script src="http://connect.soundcloud.com/sdk.js"></script>
+  <script>
+  SC.initialize({
+    client_id: '91988cd282482357c3de03bf613edaa9'
+  });
+  </script>
+  <script type="text/javascript" src="js/application.js"></script>
+</body>
+</html>
