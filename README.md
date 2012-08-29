@@ -4,6 +4,8 @@ This is my take on a Soundcloud developer challenge seen below
 The app allow the user to manage playlists using tracks from soundcloud.
 Playlists are stored in the browser using local storage.
 
+A live version is available at http://bss.github.com/soundcloud-developer-challenge/
+
 ## SOUNDCLOUD WEB-DEV CHALLENGE
 
 ### Story
